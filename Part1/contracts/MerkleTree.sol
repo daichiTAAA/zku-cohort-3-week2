@@ -11,10 +11,45 @@ contract MerkleTree is Verifier {
 
     constructor() {
         // [assignment] initialize a Merkle tree of 8 with blank leaves
+        uint256 zero = 0;
+        uint256 leavesNumber = 8;
+
+        for(uint i = 0; i < leavesNumber; i++) {
+            hashes.push(zero);
+        }
+
+        // n levels mercletree has 2**n - 1 nodes excluding leaves
+        uint256 nodesNumberExcludingLeaves = 2**3 - 1;
+
+        for(uint256 j = 0; j < (leavesNumber + nodesNumberExcludingLeaves) / 2; j++) {
+            uint256[2] memory input=[hashes[2 * j], hashes[2 * j + 1]];
+            uint256 node = PoseidonT3.poseidon(input);
+            hashes.push(node);
+        }
+
+        root = hashes[hashes.length - 1];
     }
 
     function insertLeaf(uint256 hashedLeaf) public returns (uint256) {
         // [assignment] insert a hashed leaf into the Merkle tree
+        uint256 leavesNumber = 8;
+
+        // insert a hashed leaf into the Merkle tree
+        hashes[index] = hashedLeaf;
+
+        // n levels mercletree has 2**n - 1 nodes excluding leaves
+        uint256 nodesNumberExcludingLeaves = 2**3 - 1;
+
+        for(uint256 j = 0; j < (leavesNumber + nodesNumberExcludingLeaves) / 2; j++) {
+            uint256[2] memory input=[hashes[2 * j], hashes[2 * j + 1]];
+            uint256 node = PoseidonT3.poseidon(input);
+            hashes[leavesNumber + j] = node;
+        }
+
+        index++;
+        root = hashes[hashes.length - 1];
+
+        return root;
     }
 
     function verify(
@@ -25,5 +60,15 @@ contract MerkleTree is Verifier {
         ) public view returns (bool) {
 
         // [assignment] verify an inclusion proof and check that the proof root matches current root
+        bool verifyProofResult = Verifier.verifyProof(a, b, c, input);
+        if(verifyProofResult == true) {
+            if(input[0] == root) {
+                return true;
+            }
+            return false;
+        } else {
+            return false;
+        }
+
     }
 }
